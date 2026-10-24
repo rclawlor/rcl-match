@@ -1,12 +1,18 @@
-use crate::error::Error;
+use crate::{component::Component, error::Error};
 use std::str::CharIndices;
 
-pub fn parse(source: &str) -> Result<(f32, Component), Error> {
+pub struct ComponentValue {
+    pub value: f32,
+    pub prefix: Prefix,
+    pub component: Component,
+}
+
+pub fn parse(source: &str) -> Result<ComponentValue, Error> {
     let mut parser = Parser::new(source);
     parser.parse()
 }
 
-enum Prefix {
+pub enum Prefix {
     /// f
     Femto,
     /// p
@@ -17,6 +23,8 @@ enum Prefix {
     Micro,
     /// m
     Milli,
+    /// No prefix
+    None,
     /// k
     Kilo,
     /// M
@@ -24,23 +32,54 @@ enum Prefix {
 }
 
 impl Prefix {
-    fn multiplier(&self) -> f32 {
+    pub fn multiplier(&self) -> f32 {
         match self {
             Prefix::Femto => 1e-15,
             Prefix::Pico => 1e-12,
             Prefix::Nano => 1e-9,
             Prefix::Micro => 1e-6,
             Prefix::Milli => 1e-3,
+            Prefix::None => 1.0,
             Prefix::Kilo => 1e3,
             Prefix::Mega => 1e6,
         }
     }
+
+    pub fn from_number(n: f32) -> (f32, Prefix) {
+        // Find prefix
+        let exp: i32 = ((n.log10() / 3.0).floor() * 3.0) as i32;
+        let prefix = match exp {
+            -15 => Prefix::Femto,
+            -12 => Prefix::Pico,
+            -9 => Prefix::Nano,
+            -6 => Prefix::Micro,
+            -3 => Prefix::Milli,
+            0 => Prefix::None,
+            3 => Prefix::Kilo,
+            6 => Prefix::Mega,
+            n if n < -15 => Prefix::Femto,
+            n if n > 6 => Prefix::Mega,
+            _ => unreachable!("All numbers rounded to nearest multiple of 3"),
+        };
+
+        (n / prefix.multiplier(), prefix)
+    }
 }
 
-pub enum Component {
-    Resistor,
-    Capacitor,
-    Inductor,
+impl std::fmt::Display for Prefix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            Prefix::Femto => 'f',
+            Prefix::Pico => 'p',
+            Prefix::Nano => 'n',
+            Prefix::Micro => 'u',
+            Prefix::Milli => 'm',
+            Prefix::None => ' ',
+            Prefix::Kilo => 'k',
+            Prefix::Mega => 'M',
+        };
+        write!(f, "{}", s)
+    }
 }
 
 struct Parser<'source> {
@@ -62,14 +101,16 @@ impl<'source> Parser<'source> {
         parser
     }
 
-    fn parse(&mut self) -> Result<(f32, Component), Error> {
-        let mut value = self.parse_number()?;
-        if let Some(prefix) = self.parse_prefix()? {
-            value *= prefix.multiplier();
-        }
+    fn parse(&mut self) -> Result<ComponentValue, Error> {
+        let value = self.parse_number()?;
+        let prefix = self.parse_prefix()?;
         let component = self.parse_component()?;
 
-        Ok((value, component))
+        Ok(ComponentValue {
+            value,
+            prefix,
+            component,
+        })
     }
 
     fn parse_number(&mut self) -> Result<f32, Error> {
@@ -87,9 +128,9 @@ impl<'source> Parser<'source> {
         }
     }
 
-    fn parse_prefix(&mut self) -> Result<Option<Prefix>, Error> {
+    fn parse_prefix(&mut self) -> Result<Prefix, Error> {
         if self.at_end() {
-            Ok(None)
+            Ok(Prefix::None)
         } else {
             let prefix = match self.next_char() {
                 'f' => Prefix::Femto,
@@ -101,7 +142,7 @@ impl<'source> Parser<'source> {
                 'M' => Prefix::Mega,
                 other => return Err(Error::InvalidPrefix(other.to_string())),
             };
-            Ok(Some(prefix))
+            Ok(prefix)
         }
     }
 

@@ -1,9 +1,20 @@
 use clap::ValueEnum;
 
+use crate::component::Combine;
+
 /// Round value to n decimal places
 fn round(value: f32, n: usize) -> f32 {
     let scale: f32 = 10.0_f32.powf(n as f32);
     (value * scale).round() / scale
+}
+
+/// Select the decade window to search through
+fn window(target: f32, combine: Combine) -> (i32, i32) {
+    let d = target.log10().floor() as i32;
+    match combine {
+        Combine::Sum => (d - 2, d),
+        Combine::Reciprocal => (d, d + 3),
+    }
 }
 
 /// E24 series values.
@@ -42,6 +53,35 @@ impl ESeries {
                             self.decimal_places(),
                         )
                     })
+                    .collect()
+            }
+        }
+    }
+
+    /// Find candidates to search through
+    pub fn candidates(&self, target: f32, combine: Combine) -> Vec<f32> {
+        let mut output = Vec::new();
+        let (lo, hi) = window(target, combine);
+        let base = self.values();
+        for d in lo..=hi {
+            for b in base.iter() {
+                output.push(b * 10f32.powi(d));
+            }
+        }
+
+        match combine {
+            Combine::Sum => {
+                // Values can't exceed target
+                output
+                    .into_iter()
+                    .filter(|&x| x <= target * 1.001)
+                    .collect()
+            }
+            Combine::Reciprocal => {
+                // Values can't be less than target
+                output
+                    .into_iter()
+                    .filter(|&x| x >= target * 0.999)
                     .collect()
             }
         }
