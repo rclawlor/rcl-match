@@ -9,7 +9,7 @@ use clap::Parser;
 use crate::{
     component::{Component, Topology},
     matcher::find_values,
-    parser::{Prefix, parse},
+    parser::parse,
     series::ESeries,
 };
 
@@ -44,12 +44,8 @@ fn main() {
         }
     };
 
-    let (value, (a, b)) = find_values(&component, series, args.topology);
-    let (a_scale, a_prefix) = Prefix::from_number(a);
-    let (b_scale, b_prefix) = Prefix::from_number(b);
-    println!(
-        "{value}: {a_scale}{a_prefix}{}, {b_scale}{b_prefix}{}",
-        component.component.unit(),
-        component.component.unit()
-    );
+    let values = find_values(&component, series, args.topology);
+    for value in values {
+        println!("{}: {}, {}", value.0, value.1, value.2);
+    }
 }
