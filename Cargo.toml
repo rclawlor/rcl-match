@@ -1,0 +1,11 @@
+[package]
+name = "rcl-match"
+version = "0.0.1"
+edition = "2024"
+description = "CLI tool to find the closest resistor/capacitor/inductor combinations for your target value, using E-series values"
+repository = "https://github.com/rclawlor/rcl-match"
+license = "MIT"
+keywords = ["cli", "electronics", "resistor", "capacitor", "inductor"]
+categories = ["command-line-utilities"]
+
+[dependencies]
