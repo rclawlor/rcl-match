@@ -1,3 +1,12 @@
+mod parser;
+
+use clap::Parser;
+
+#[derive(Parser)]
+struct Args {
+    value: String,
+}
+
 fn main() {
-    println!("Hello, world!");
+    let _args = Args::parse();
 }
