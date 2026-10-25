@@ -1,12 +1,6 @@
 use clap::ValueEnum;
 
-use crate::component::Combine;
-
-/// Round value to n decimal places
-fn round(value: f32, n: usize) -> f32 {
-    let scale: f32 = 10.0_f32.powf(n as f32);
-    (value * scale).round() / scale
-}
+use crate::{component::Combine, math::round};
 
 /// Select the decade window to search through
 fn window(target: f32, combine: Combine) -> (i32, i32) {
@@ -105,5 +99,10 @@ impl ESeries {
             ESeries::E3 | ESeries::E6 | ESeries::E12 | ESeries::E24 => 1,
             ESeries::E48 | ESeries::E96 | ESeries::E192 => 2,
         }
+    }
+
+    /// Get number of significant figures for E series values between 1.0 to 9.9
+    pub fn significant_figures(&self) -> usize {
+        self.decimal_places() + 1
     }
 }

@@ -1,13 +1,7 @@
-use crate::{component::Component, error::Error};
+use crate::{component::ComponentKind, error::Error};
 use std::str::CharIndices;
 
-pub struct ComponentValue {
-    pub value: f32,
-    pub prefix: Prefix,
-    pub component: Component,
-}
-
-pub fn parse(source: &str) -> Result<ComponentValue, Error> {
+pub fn parse(source: &str) -> Result<(f32, ComponentKind), Error> {
     let mut parser = Parser::new(source);
     parser.parse()
 }
@@ -101,16 +95,12 @@ impl<'source> Parser<'source> {
         parser
     }
 
-    fn parse(&mut self) -> Result<ComponentValue, Error> {
+    fn parse(&mut self) -> Result<(f32, ComponentKind), Error> {
         let value = self.parse_number()?;
         let prefix = self.parse_prefix()?;
-        let component = self.parse_component()?;
+        let kind = self.parse_component()?;
 
-        Ok(ComponentValue {
-            value,
-            prefix,
-            component,
-        })
+        Ok((value * prefix.multiplier(), kind))
     }
 
     fn parse_number(&mut self) -> Result<f32, Error> {
@@ -146,15 +136,15 @@ impl<'source> Parser<'source> {
         }
     }
 
-    fn parse_component(&mut self) -> Result<Component, Error> {
+    fn parse_component(&mut self) -> Result<ComponentKind, Error> {
         if self.at_end() {
-            Ok(Component::Resistor)
+            Ok(ComponentKind::Resistor)
         } else {
             let unit = self.flush();
             let component = match unit.as_str() {
-                "R" | "Ohm" | "Ohms" | "ohm" | "ohms" => Component::Resistor,
-                "F" => Component::Capacitor,
-                "H" => Component::Inductor,
+                "R" | "Ohm" | "Ohms" | "ohm" | "ohms" => ComponentKind::Resistor,
+                "F" => ComponentKind::Capacitor,
+                "H" => ComponentKind::Inductor,
                 other => return Err(Error::InvalidUnit(other.to_string())),
             };
             self.advance();

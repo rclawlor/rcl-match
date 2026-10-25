@@ -1,28 +1,23 @@
 use crate::{
-    component::Topology,
-    parser::{ComponentValue, Prefix},
+    component::{Component, Topology},
     series::ESeries,
 };
 
 pub fn find_values(
-    component: &ComponentValue,
+    component: &Component,
     series: ESeries,
     topology: Topology,
     precision: f32,
-) -> Vec<(String, String, String)> {
+) -> Vec<(Component, Component, Component)> {
     let mut matcher = Matcher::new();
     let matches = matcher.find_matches(component, series, topology, precision);
-    let unit = component.component.unit();
     matches
         .iter()
         .map(|m| {
-            let (v_scale, v_prefix) = Prefix::from_number(m.value);
-            let (a_scale, a_prefix) = Prefix::from_number(m.a);
-            let (b_scale, b_prefix) = Prefix::from_number(m.b);
             (
-                format!("{v_scale}{v_prefix}{unit}"),
-                format!("{a_scale}{a_prefix}{unit}"),
-                format!("{b_scale}{b_prefix}{unit}"),
+                Component::new(m.value, component.kind, series),
+                Component::new(m.a, component.kind, series),
+                Component::new(m.b, component.kind, series),
             )
         })
         .collect()
@@ -52,13 +47,13 @@ impl Matcher {
     /// Find component matches
     fn find_matches(
         &mut self,
-        c: &ComponentValue,
+        c: &Component,
         series: ESeries,
         topology: Topology,
         precision: f32,
     ) -> Vec<CandidateMatch> {
-        let target = c.value * c.prefix.multiplier();
-        let combine = c.component.combine_for(topology);
+        let target = c.value;
+        let combine = c.kind.combine_for(topology);
         let candidates = series.candidates(target, combine);
         for (idx, a) in candidates.iter().enumerate() {
             for b in &candidates[idx..] {

@@ -1,13 +1,14 @@
 mod component;
 mod error;
 mod matcher;
+mod math;
 mod parser;
 mod series;
 
 use clap::Parser;
 
 use crate::{
-    component::{Component, Topology},
+    component::{Component, ComponentKind, Topology},
     matcher::find_values,
     parser::parse,
     series::ESeries,
@@ -30,7 +31,7 @@ struct Args {
 
 fn main() {
     let args = Args::parse();
-    let component = match parse(&args.value) {
+    let (value, kind) = match parse(&args.value) {
         Ok(result) => result,
         Err(e) => {
             e.pprint();
@@ -38,19 +39,21 @@ fn main() {
         }
     };
 
+    // Different components have different default series
     let series = if let Some(s) = args.eseries {
         s
     } else {
-        match component.component {
-            Component::Resistor => ESeries::E24,
-            Component::Capacitor | Component::Inductor => ESeries::E12,
+        match kind {
+            ComponentKind::Resistor => ESeries::E24,
+            ComponentKind::Capacitor | ComponentKind::Inductor => ESeries::E12,
         }
     };
 
+    let component = Component::new(value, kind, series);
     let precision = args.precision.unwrap_or(5.0);
 
     let values = find_values(&component, series, args.topology, precision);
     for value in values {
-        println!("{}: {}, {}", value.0, value.1, value.2);
+        println!("{}: {}, {}", value.0.pprint_precise(), value.1, value.2);
     }
 }
