@@ -240,3 +240,45 @@ impl Draw for InductorSymbol {
         vec![format!("     L{:<6}", self.id), "──◠ ◠ ◠ ◠ ──".to_string()]
     }
 }
+
+pub struct Table {
+    pub headers: Vec<String>,
+    pub data: Vec<Vec<String>>,
+}
+
+impl Table {
+    pub fn pprint(&self) -> Vec<String> {
+        // Find min column widths that fit data and header
+        let widths: Vec<usize> = (0..self.headers.len())
+            .map(|c| {
+                self.data
+                    .iter()
+                    .filter_map(|r| r.get(c))
+                    .map(|s| s.chars().count().max(self.headers[c].len()))
+                    .max()
+                    .unwrap_or(0)
+            })
+            .collect();
+
+        let mut output = Vec::new();
+        let mut titles = Vec::new();
+        let mut underline = Vec::new();
+        for (h, w) in self.headers.iter().zip(&widths) {
+            titles.push(format!(" {:<width$} ", h, width = w));
+            underline.push("─".repeat(w + 2));
+        }
+        output.push(titles.join("│"));
+        output.push(underline.join("┼"));
+
+        for row in &self.data {
+            let padded: Vec<_> = row
+                .iter()
+                .zip(&widths)
+                .map(|(s, w)| format!(" {:<width$} ", s, width = w))
+                .collect();
+            output.push(padded.join("│"));
+        }
+
+        output
+    }
+}

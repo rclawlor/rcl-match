@@ -10,7 +10,7 @@ use clap::Parser;
 
 use crate::{
     component::{Component, ComponentKind, Topology},
-    display::{Draw, ParallelCircuit, SeriesCircuit},
+    display::{Draw, ParallelCircuit, SeriesCircuit, Table},
     matcher::find_values,
     parser::parse,
     series::ESeries,
@@ -55,11 +55,18 @@ fn main() {
     let precision = args.precision.unwrap_or(5.0);
 
     let values = find_values(&component, series, args.topology, precision);
-    for value in values {
-        println!("{}: {}, {}", value.0.pprint_precise(), value.1, value.2);
-    }
+    let data: Vec<Vec<String>> = values
+        .iter()
+        .map(|(v, a, b)| {
+            vec![
+                format!("{}", v.pprint_precise()),
+                format!("{a}"),
+                format!("{b}"),
+            ]
+        })
+        .collect();
 
-    let output = match args.topology {
+    let schematic = match args.topology {
         Topology::Series => {
             let circuit = SeriesCircuit::from_kind(component.kind, 2);
             circuit.draw()
@@ -70,7 +77,23 @@ fn main() {
         }
     };
 
-    for line in output {
-        println!("{line}");
+    let table = Table {
+        headers: vec![
+            "Value".to_string(),
+            format!("{}1", component.kind.symbol()),
+            format!("{}2", component.kind.symbol()),
+        ],
+        data,
+    };
+
+    // Print output to terminal
+    println!();
+    for row in schematic {
+        println!(" {row}");
     }
+    println!();
+    for row in table.pprint() {
+        println!(" {row}")
+    }
+    println!();
 }

@@ -78,6 +78,14 @@ impl ComponentKind {
             ComponentKind::Inductor => "H",
         }
     }
+
+    pub fn symbol(&self) -> &'static str {
+        match self {
+            ComponentKind::Resistor => "R",
+            ComponentKind::Capacitor => "C",
+            ComponentKind::Inductor => "L",
+        }
+    }
 }
 
 #[derive(ValueEnum, Clone, Copy)]
