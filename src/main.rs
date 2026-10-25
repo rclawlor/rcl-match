@@ -10,6 +10,7 @@ use clap::Parser;
 
 use crate::{
     component::{Component, ComponentKind, Topology},
+    display::{Draw, ParallelCircuit, SeriesCircuit},
     matcher::find_values,
     parser::parse,
     series::ESeries,
@@ -56,5 +57,20 @@ fn main() {
     let values = find_values(&component, series, args.topology, precision);
     for value in values {
         println!("{}: {}, {}", value.0.pprint_precise(), value.1, value.2);
+    }
+
+    let output = match args.topology {
+        Topology::Series => {
+            let circuit = SeriesCircuit::from_kind(component.kind, 2);
+            circuit.draw()
+        }
+        Topology::Parallel => {
+            let circuit = ParallelCircuit::from_kind(component.kind, 2);
+            circuit.draw()
+        }
+    };
+
+    for line in output {
+        println!("{line}");
     }
 }

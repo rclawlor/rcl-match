@@ -1,4 +1,5 @@
-#[allow(unused)]
+use crate::component::ComponentKind;
+
 ///  Methods for locating a node relative to others, alongside
 ///  rendering the node
 pub trait Draw {
@@ -13,11 +14,29 @@ pub trait Draw {
     fn draw(&self) -> Vec<String>;
 }
 
-pub struct SeriesCircuit<T: Draw> {
-    pub components: Vec<T>,
+pub struct SeriesCircuit {
+    pub components: Vec<Box<dyn Draw>>,
 }
 
-impl<T: Draw> Draw for SeriesCircuit<T> {
+impl SeriesCircuit {
+    pub fn from_kind(kind: ComponentKind, num: usize) -> Self {
+        let components = match kind {
+            ComponentKind::Resistor => (0..num)
+                .map(|idx| Box::new(ResistorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+            ComponentKind::Capacitor => (0..num)
+                .map(|idx| Box::new(CapacitorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+            ComponentKind::Inductor => (0..num)
+                .map(|idx| Box::new(InductorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+        };
+
+        SeriesCircuit { components }
+    }
+}
+
+impl Draw for SeriesCircuit {
     fn entry_height(&self) -> usize {
         self.components
             .first()
@@ -42,18 +61,34 @@ impl<T: Draw> Draw for SeriesCircuit<T> {
     }
 }
 
-pub struct ParallelCircuit<T: Draw> {
-    pub components: Vec<T>,
+pub struct ParallelCircuit {
+    pub components: Vec<Box<dyn Draw>>,
 }
 
-impl<T: Draw> ParallelCircuit<T> {
+impl ParallelCircuit {
     /// True if the circuit contains an even number of components
     fn is_even(&self) -> bool {
         self.components.len().is_multiple_of(2)
     }
+
+    pub fn from_kind(kind: ComponentKind, num: usize) -> Self {
+        let components = match kind {
+            ComponentKind::Resistor => (0..num)
+                .map(|idx| Box::new(ResistorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+            ComponentKind::Capacitor => (0..num)
+                .map(|idx| Box::new(CapacitorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+            ComponentKind::Inductor => (0..num)
+                .map(|idx| Box::new(InductorSymbol { id: idx + 1 }) as Box<dyn Draw>)
+                .collect(),
+        };
+
+        ParallelCircuit { components }
+    }
 }
 
-impl<T: Draw> Draw for ParallelCircuit<T> {
+impl Draw for ParallelCircuit {
     fn entry_height(&self) -> usize {
         let mid = self.components.len() / 2;
         if self.is_even() {
@@ -114,7 +149,19 @@ impl<T: Draw> Draw for ParallelCircuit<T> {
                 output.push(s.to_string());
             }
         }
+
+        // Add extra tracking to entry/exit points
         output
+            .iter()
+            .enumerate()
+            .map(|(idx, s)| {
+                if idx == self.entry_height() {
+                    format!("─{s}─")
+                } else {
+                    format!(" {s} ")
+                }
+            })
+            .collect()
     }
 }
 
