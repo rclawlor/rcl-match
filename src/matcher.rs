@@ -8,9 +8,10 @@ pub fn find_values(
     component: &ComponentValue,
     series: ESeries,
     topology: Topology,
+    precision: f32,
 ) -> Vec<(String, String, String)> {
     let mut matcher = Matcher::new();
-    let matches = matcher.find_matches(component, series, topology);
+    let matches = matcher.find_matches(component, series, topology, precision);
     let unit = component.component.unit();
     matches
         .iter()
@@ -44,7 +45,7 @@ impl Matcher {
     fn new() -> Self {
         Matcher {
             best: Vec::new(),
-            n_matches: 2,
+            n_matches: 5,
         }
     }
 
@@ -54,6 +55,7 @@ impl Matcher {
         c: &ComponentValue,
         series: ESeries,
         topology: Topology,
+        precision: f32,
     ) -> Vec<CandidateMatch> {
         let target = c.value * c.prefix.multiplier();
         let combine = c.component.combine_for(topology);
@@ -61,12 +63,15 @@ impl Matcher {
         for (idx, a) in candidates.iter().enumerate() {
             for b in &candidates[idx..] {
                 let result = combine.apply(a, b);
-                self.check_result(&CandidateMatch {
-                    value: result,
-                    error: (result - target).abs(),
-                    a: *a,
-                    b: *b,
-                });
+                let error = (result - target).abs();
+                if 100.0 * (error / target) <= precision {
+                    self.check_result(&CandidateMatch {
+                        value: result,
+                        error: (result - target).abs(),
+                        a: *a,
+                        b: *b,
+                    });
+                }
             }
         }
 

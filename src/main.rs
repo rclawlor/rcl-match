@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(Parser)]
 struct Args {
-    /// Target component value
+    /// Target component value with units (e.g. 50pF, 5kOhm, 2uH)
     value: String,
     /// Topology of components
     #[arg(short = 't', long = "topology")]
@@ -23,6 +23,9 @@ struct Args {
     /// E series values to choose from
     #[arg(short = 'e', long = "eseries")]
     eseries: Option<ESeries>,
+    /// Percentage precision (default 5%)
+    #[arg(short = 'p', long = "precision")]
+    precision: Option<f32>,
 }
 
 fn main() {
@@ -44,7 +47,9 @@ fn main() {
         }
     };
 
-    let values = find_values(&component, series, args.topology);
+    let precision = args.precision.unwrap_or(5.0);
+
+    let values = find_values(&component, series, args.topology, precision);
     for value in values {
         println!("{}: {}, {}", value.0, value.1, value.2);
     }
