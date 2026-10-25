@@ -1,4 +1,5 @@
 mod component;
+mod display;
 mod error;
 mod matcher;
 mod math;
