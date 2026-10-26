@@ -59,7 +59,7 @@ fn main() {
         .iter()
         .map(|(v, a, b)| {
             vec![
-                format!("{}", v.pprint_precise()),
+                v.pprint_precise().to_string(),
                 format!("{a}"),
                 format!("{b}"),
             ]
